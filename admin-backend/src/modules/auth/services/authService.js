@@ -5,9 +5,11 @@ const crypto = require('crypto');
 module.exports = (config, logger, model, userAccessModel, refreshTokenModel) => ({
   login: async (email, password) => {
     logger.debug(`SECURITY AUDIT: Login attempt for email: ${email}`);
+    console.log('DEBUG: authService.login called with userAccessModel:', !!userAccessModel);
 
     if (!userAccessModel) {
       logger.error('userAccessModel is undefined in authService');
+      console.log('DEBUG: userAccessModel is null, throwing error');
       throw new Error('userAccessModel is not available');
     }
 
