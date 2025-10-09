@@ -151,13 +151,16 @@ module.exports = (service, logger, loggingService) => ({
 
   getProfile: async (req, res) => {
     logger.debug('Starting getProfile');
+    console.log('DEBUG: getProfile called for user_id:', req.user?.user_id);
     try {
       const userId = req.user.user_id;
       const profile = await service.getProfile(userId);
       logger.info('getProfile completed successfully');
+      console.log('DEBUG: getProfile about to send 200 response');
       res.json(profile);
     } catch (error) {
       logger.error('Error in getProfile:', error.message);
+      console.log('DEBUG: getProfile caught error, sending 500:', error.message);
       res.status(500).json({ message: error.message });
     }
   },
