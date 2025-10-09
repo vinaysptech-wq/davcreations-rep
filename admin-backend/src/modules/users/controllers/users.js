@@ -164,6 +164,7 @@ module.exports = (service, logger, loggingService) => ({
 
   updateProfile: async (req, res) => {
     logger.debug('Starting updateProfile');
+    console.log('DEBUG: updateProfile called with body:', req.body);
     try {
       const userId = req.user.user_id;
       const profileData = req.body;
@@ -174,9 +175,11 @@ module.exports = (service, logger, loggingService) => ({
         await loggingService.createLog('info', `Superadmin updated own profile`, req.user.user_id, 'PROFILE_UPDATE', JSON.stringify({ user_id: userId }));
       }
       logger.info('updateProfile completed successfully');
+      console.log('DEBUG: updateProfile about to send 200 response');
       res.json(profile);
     } catch (error) {
       logger.error('Error in updateProfile:', error.message);
+      console.log('DEBUG: updateProfile caught error, sending 500:', error.message);
       res.status(500).json({ message: error.message });
     }
   },

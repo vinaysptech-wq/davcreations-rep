@@ -4885,3 +4885,12 @@
 {"level":"info","message":"Prisma Info: Starting a postgresql pool with 17 connections.","timestamp":"2025-10-09T11:32:24.145Z"}
 {"level":"info","message":"Setup already completed, skipping.","timestamp":"2025-10-09T11:32:24.206Z"}
 {"level":"info","message":"Server started in development mode on port 5000","timestamp":"2025-10-09T11:32:24.210Z"}
+{"level":"info","message":"Server configuration validated successfully","timestamp":"2025-10-09T11:32:49.166Z"}
+{"level":"info","message":"Server config loaded - Port: 5000, Env: development","timestamp":"2025-10-09T11:32:49.206Z"}
+{"level":"info","message":"SSL Config - HTTPS Enabled: false, HTTPS Redirect: false","timestamp":"2025-10-09T11:32:49.206Z"}
+{"level":"info","message":"CORS Config - Origin: http://localhost:3000, Credentials: true","timestamp":"2025-10-09T11:32:49.207Z"}
+{"level":"info","message":"CORS configured with origin: http://localhost:3000","timestamp":"2025-10-09T11:32:49.207Z"}
+{"level":"info","message":"SSL CONFIG: HTTPS enforcement skipped in development environment","timestamp":"2025-10-09T11:32:49.209Z"}
+{"level":"info","message":"Prisma Info: Starting a postgresql pool with 17 connections.","timestamp":"2025-10-09T11:32:49.323Z"}
+{"level":"info","message":"Setup already completed, skipping.","timestamp":"2025-10-09T11:32:49.485Z"}
+{"level":"info","message":"Server started in development mode on port 5000","timestamp":"2025-10-09T11:32:49.488Z"}
