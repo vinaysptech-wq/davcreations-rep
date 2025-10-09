@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id               Int         @id @default(autoincrement())
+  first_name            String
+  last_name             String
+  user_typeid           Int
+  address               String?
+  email                 String      @unique
+  phone                 String?
+  user_password         String
+  bank_name             String?
+  bank_ifsc_code        String?
+  bank_account_number   String?
+  bank_address          String?
+  city                  String?
+  state                 String?
+  image                 String?
+  created_date          DateTime    @default(now())
+  last_updated_date     DateTime    @updatedAt
+  is_active             Boolean     @default(true)
+
+  user_type             UserType    @relation(fields: [user_typeid], references: [user_type_id])
+  user_access           UserAccess[]
+  created_user_access   UserAccess[] @relation("CreatedBy")
+  admin_modules         AdminModules[]
+  logs                  Log[]
+  preferences           UserPreferences?
+  support_tickets       SupportTicket[]
+  vendor                Vendor?
+  orders                Order[]
+  reviews               Review[]
+  refresh_tokens        RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  refresh_token_id      Int      @id @default(autoincrement())
+  user_id               Int
+  token                 String   @unique
+  expires_at            DateTime
+  created_at            DateTime @default(now())
+  is_revoked            Boolean  @default(false)
+
+  user                  User     @relation(fields: [user_id], references: [user_id])
+
+  @@map("refresh_tokens")
+}
+
+model UserType {
+  user_type_id       Int      @id @default(autoincrement())
+  user_type_name     String
+  created_date       DateTime @default(now())
+  last_updated_date  DateTime @updatedAt
+  is_active          Boolean  @default(true)
+
+  users User[]
+
+  @@map("user_type")
+}
+
+model AdminModules {
+  admin_module_id    Int         @id @default(autoincrement())
+  module_name        String
+  parent_id          Int?
+  tool_tip           String?
+  short_description  String?
+  url_slug           String?
+  user_id            Int?
+  category           String?
+  created_date       DateTime    @default(now())
+  last_updated_date  DateTime    @updatedAt
+  is_active          Boolean     @default(true)
+
+  user_access        UserAccess[]
+  parent             AdminModules? @relation("ParentChild", fields: [parent_id], references: [admin_module_id])
+  children           AdminModules[] @relation("ParentChild")
+  user               User?       @relation(fields: [user_id], references: [user_id])
+
+  @@map("admin_modules")
+}
+
+model UserAccess {
+  user_access_id     Int      @id @default(autoincrement())
+  admin_module_id    Int
+  user_id            Int
+  created_by         Int
+  created_date       DateTime @default(now())
+  last_updated_date  DateTime @updatedAt
+  is_active          Boolean  @default(true)
+
+  admin_module       AdminModules @relation(fields: [admin_module_id], references: [admin_module_id])
+  user               User        @relation(fields: [user_id], references: [user_id])
+  created_by_user    User        @relation("CreatedBy", fields: [created_by], references: [user_id])
+
+  @@map("user_access")
+}
+
+model Setting {
+  setting_id         Int      @id @default(autoincrement())
+  setting_key        String   @unique
+  setting_value      String
+  created_date       DateTime @default(now())
+  last_updated_date  DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model UserPreferences {
+  preference_id      Int      @id @default(autoincrement())
+  user_id            Int      @unique
+  theme              String   @default("light")
+  language           String   @default("en")
+  email_notifications Boolean @default(true)
+  push_notifications  Boolean @default(false)
+  created_date       DateTime @default(now())
+  last_updated_date  DateTime @updatedAt
+
+  user               User     @relation(fields: [user_id], references: [user_id])
+
+  @@map("user_preferences")
+}
+
+model Log {
+  log_id             Int      @id @default(autoincrement())
+  level              String
+  message            String
+  timestamp          DateTime @default(now())
+  user_id            Int?
+  action             String?
+  details            String?
+
+  user               User?    @relation(fields: [user_id], references: [user_id])
+
+  @@map("logs")
+}
+
+enum TicketStatus {
+  open
+  closed
+  pending
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+}
+
+model SupportTicket {
+  ticket_id          Int             @id @default(autoincrement())
+  user_id            Int
+  subject            String
+  description        String
+  status             TicketStatus    @default(open)
+  priority           TicketPriority  @default(medium)
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+
+  user               User            @relation(fields: [user_id], references: [user_id])
+
+  @@map("support_tickets")
+}
+
+model Vendor {
+  vendor_id          Int      @id @default(autoincrement())
+  user_id            Int      @unique
+  store_name         String
+  store_description  String?
+  commission_rate    Float    @default(10.0)
+  is_active          Boolean  @default(false)
+  created_date       DateTime @default(now())
+  last_updated_date  DateTime @updatedAt
+
+  user               User     @relation(fields: [user_id], references: [user_id])
+  products           Product[]
+  orders             Order[]  @relation("VendorOrders")
+}
+
+model Category {
+  category_id        Int      @id @default(autoincrement())
+  name               String
+  description        String?
+  parent_id          Int?
+  image_url          String?
+  is_active          Boolean  @default(true)
+  created_date       DateTime @default(now())
+  last_updated_date  DateTime @updatedAt
+
+  parent             Category? @relation("CategoryHierarchy", fields: [parent_id], references: [category_id])
+  children           Category[] @relation("CategoryHierarchy")
+  products           Product[]
+}
+
+model Product {
+  product_id         Int      @id @default(autoincrement())
+  vendor_id          Int
+  category_id        Int
+  name               String
+  description        String
+  price              Float
+  compare_price      Float?
+  sku                String    @unique
+  stock_quantity     Int       @default(0)
+  images             String[]  // JSON array of image URLs
+  attributes         Json?     // Size, color, etc.
+  is_active          Boolean   @default(true)
+  created_date       DateTime  @default(now())
+  last_updated_date  DateTime  @updatedAt
+
+  vendor             Vendor    @relation(fields: [vendor_id], references: [vendor_id])
+  category           Category  @relation(fields: [category_id], references: [category_id])
+  order_items        OrderItem[]
+  reviews            Review[]
+}
+
+model Order {
+  order_id           Int         @id @default(autoincrement())
+  customer_id        Int
+  vendor_id          Int?
+  order_number       String      @unique
+  status             OrderStatus @default(pending)
+  subtotal           Float
+  tax_amount         Float       @default(0)
+  shipping_amount    Float       @default(0)
+  discount_amount    Float       @default(0)
+  total_amount       Float
+  payment_status     PaymentStatus @default(pending)
+  shipping_address   Json
+  billing_address    Json
+  created_date       DateTime    @default(now())
+  last_updated_date  DateTime    @updatedAt
+
+  customer           User        @relation(fields: [customer_id], references: [user_id])
+  vendor             Vendor?     @relation("VendorOrders", fields: [vendor_id], references: [vendor_id])
+  items              OrderItem[]
+  payments           Payment[]
+}
+
+model OrderItem {
+  order_item_id      Int     @id @default(autoincrement())
+  order_id           Int
+  product_id         Int
+  quantity           Int
+  unit_price         Float
+  total_price        Float
+
+  order              Order   @relation(fields: [order_id], references: [order_id])
+  product            Product @relation(fields: [product_id], references: [product_id])
+}
+
+model Payment {
+  payment_id         Int            @id @default(autoincrement())
+  order_id           Int
+  amount             Float
+  currency           String         @default("USD")
+  payment_method     String
+  transaction_id     String         @unique
+  status             PaymentStatus
+  gateway_response   Json?
+  created_date       DateTime       @default(now())
+
+  order              Order          @relation(fields: [order_id], references: [order_id])
+}
+
+model Review {
+  review_id          Int     @id @default(autoincrement())
+  product_id         Int
+  customer_id        Int
+  rating             Int     // 1-5 stars
+  title              String?
+  comment            String?
+  is_verified        Boolean @default(false)
+  created_date       DateTime @default(now())
+
+  product            Product @relation(fields: [product_id], references: [product_id])
+  customer           User    @relation(fields: [customer_id], references: [user_id])
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+}
