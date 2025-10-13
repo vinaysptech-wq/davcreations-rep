@@ -1,10 +1,10 @@
-module.exports = (config, logger, db) => {
+module.exports = (config, logger, _db) => {
   const models = {
     user: require('./models/users'),
     userAccess: require('./models/userAccess'),
     adminModule: require('./models/adminModule'),
     userType: require('./models/userType'),
-    userPreferences: require('./models/users'), // reusing users for preferences
+    userPreferences: require('./models/userPreferences'),
     logs: require('../logging/services/loggingService'), // placeholder
     settings: {}, // placeholder
   };

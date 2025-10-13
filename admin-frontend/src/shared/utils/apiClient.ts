@@ -188,7 +188,7 @@ export class ApiClient {
       logger.debug('Token expired, attempting refresh before request');
       try {
         await this.refreshToken();
-      } catch (refreshError) {
+      } catch {
         logger.error('Token refresh failed before request, proceeding with expired token');
       }
     }
@@ -236,7 +236,7 @@ export class ApiClient {
               logger.debug(`API Success after retry for ${endpoint}`);
               return apiResponse;
             }
-          } catch (refreshError) {
+          } catch {
             logger.error('Token refresh failed on 403, proceeding with error');
           }
         }
@@ -327,8 +327,12 @@ export class ApiClient {
     });
   }
 
-  async delete<T = unknown>(endpoint: string, config: Omit<RequestConfig, 'method' | 'body'> = {}): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, { ...config, method: 'DELETE' });
+  async delete<T = unknown>(endpoint: string, data?: unknown, config: Omit<RequestConfig, 'method' | 'body'> = {}): Promise<ApiResponse<T>> {
+    return this.makeRequest<T>(endpoint, {
+      ...config,
+      method: 'DELETE',
+      body: data ? JSON.stringify(data) : undefined,
+    });
   }
 }
 
@@ -358,9 +362,9 @@ apiClient.addResponseInterceptor((response, data) => {
 });
 
 apiClient.addErrorInterceptor((error) => {
-  // Handle authentication errors globally (only for non-403 cases that weren't handled by refresh)
-  if (error.status === 401 || (error.status === 403 && !error.message.includes('Invalid or expired token'))) {
-    handleApiError(error, false); // Don't show toast for auth errors, handle redirect
+  // Handle authentication errors globally
+  if (error.status === 401 || error.status === 403) {
+    // Clear authentication data
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -370,11 +374,21 @@ apiClient.addErrorInterceptor((error) => {
         window.location.href = '/login';
       }
     }
-  } else {
-    // Show user-friendly error messages for other errors
-    handleApiError(error, true);
+    // Don't show toast for auth errors as we're redirecting
+    return error;
   }
 
+  // Handle network errors
+  if (error.status === 0) {
+    handleApiError({
+      ...error,
+      message: 'Unable to connect to the server. Please check your internet connection and try again.'
+    }, true);
+    return error;
+  }
+
+  // Show user-friendly error messages for other errors
+  handleApiError(error, true);
   return error;
 });
 
@@ -389,6 +403,8 @@ export const usersApi = {
   getModules: () => apiClient.get('/api/users/modules'),
   getUserModules: (id: string) => apiClient.get(`/api/users/${id}/modules`),
   updateUserModules: (id: string, modules: unknown) => apiClient.put(`/api/users/${id}/modules`, modules),
+  bulkAssignPermissions: (id: string, permissionsData: unknown) => apiClient.post(`/api/users/${id}/permissions/bulk`, permissionsData),
+  bulkRemovePermissions: (id: string, moduleIds: number[]) => apiClient.delete(`/api/users/${id}/permissions/bulk`, { moduleIds }),
 };
 
 export const userTypesApi = {
@@ -465,4 +481,27 @@ export const supportApi = {
   getTicket: (id: string) => apiClient.get(`/api/support/tickets/${id}`),
   createTicket: (ticketData: { subject: string; description: string; priority?: string }) => apiClient.post('/api/support/tickets', ticketData),
   updateTicket: (id: string, ticketData: { subject?: string; description?: string; priority?: string; status?: string }) => apiClient.put(`/api/support/tickets/${id}`, ticketData),
+};
+
+export const rolePermissionsApi = {
+  getRolePermissions: (id: string) => apiClient.get(`/api/userTypes/${id}/permissions`),
+  assignPermission: (id: string, permissionData: unknown) => apiClient.post(`/api/userTypes/${id}/permissions`, permissionData),
+  removePermission: (id: string, moduleId: string) => apiClient.delete(`/api/userTypes/${id}/permissions/${moduleId}`),
+  bulkAssignPermissions: (id: string, permissionsData: unknown) => apiClient.post(`/api/userTypes/${id}/permissions/bulk`, permissionsData),
+  bulkRemovePermissions: (id: string, permissionsData: unknown) => apiClient.delete(`/api/userTypes/${id}/permissions/bulk`, permissionsData),
+  updatePermission: (id: string, moduleId: string, permissionData: unknown) => apiClient.put(`/api/userTypes/${id}/permissions/${moduleId}`, permissionData),
+};
+
+export const auditApi = {
+  getAuditLogsForPermission: (rolePermissionsId: string, limit = 50) => apiClient.get(`/api/audit/permissions/${rolePermissionsId}?limit=${limit}`),
+  getAuditLogsForUser: (userId: string, limit = 100) => apiClient.get(`/api/audit/users/${userId}?limit=${limit}`),
+  getAuditLogsByDateRange: (startDate: string, endDate: string, limit = 500) => {
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+      limit: limit.toString(),
+    });
+    return apiClient.get(`/api/audit/date-range?${params.toString()}`);
+  },
+  getAuditSummary: (startDate: string, endDate: string) => apiClient.get(`/api/audit/summary?startDate=${startDate}&endDate=${endDate}`),
 };

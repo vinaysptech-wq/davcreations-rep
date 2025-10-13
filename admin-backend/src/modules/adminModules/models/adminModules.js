@@ -9,6 +9,9 @@ const create = async (adminModuleData) => {
         url_slug: adminModuleData.url_slug,
         is_active: adminModuleData.is_active !== undefined ? adminModuleData.is_active : true,
         user_id: adminModuleData.user_id,
+        tool_tip: adminModuleData.tool_tip,
+        short_description: adminModuleData.short_description,
+        category: adminModuleData.category,
       },
     });
 
@@ -65,6 +68,9 @@ const update = async (id, adminModuleData) => {
       url_slug: adminModuleData.url_slug,
       is_active: adminModuleData.is_active,
       user_id: adminModuleData.user_id,
+      tool_tip: adminModuleData.tool_tip,
+      short_description: adminModuleData.short_description,
+      category: adminModuleData.category,
       last_updated_date: new Date(),
     };
 
@@ -84,14 +90,9 @@ const update = async (id, adminModuleData) => {
 
 const deleteAdminModule = async (id) => {
   try {
-    const adminModule = await prisma.AdminModules.update({
+    const adminModule = await prisma.AdminModules.delete({
       where: {
         admin_module_id: parseInt(id),
-        is_active: true,
-      },
-      data: {
-        is_active: false,
-        last_updated_date: new Date(),
       },
     });
 

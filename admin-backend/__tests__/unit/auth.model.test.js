@@ -24,7 +24,7 @@ describe('Auth User Model', () => {
 
       const result = await model.getByEmail('test@example.com');
 
-      expect(mockDb.user.findUnique).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+      expect(mockDb.user.findUnique).toHaveBeenCalledWith({ where: { email: 'test@example.com' }, include: { user_type: true } });
       expect(result).toEqual(mockUser);
     });
 
@@ -33,7 +33,7 @@ describe('Auth User Model', () => {
 
       const result = await model.getByEmail('notfound@example.com');
 
-      expect(mockDb.user.findUnique).toHaveBeenCalledWith({ where: { email: 'notfound@example.com' } });
+      expect(mockDb.user.findUnique).toHaveBeenCalledWith({ where: { email: 'notfound@example.com' }, include: { user_type: true } });
       expect(result).toBeNull();
     });
 

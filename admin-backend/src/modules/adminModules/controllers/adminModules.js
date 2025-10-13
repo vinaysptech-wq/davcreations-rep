@@ -36,6 +36,9 @@ module.exports = (service, logger) => ({
         module_name: Joi.string().required(),
         url_slug: Joi.string().required(),
         parent_id: Joi.number().integer().optional(),
+        tool_tip: Joi.string().optional(),
+        short_description: Joi.string().optional(),
+        category: Joi.string().optional(),
         is_active: Joi.boolean().optional(),
         user_id: Joi.number().integer().optional(),
       });
@@ -63,6 +66,9 @@ module.exports = (service, logger) => ({
         module_name: Joi.string().required(),
         url_slug: Joi.string().required(),
         parent_id: Joi.number().integer().optional(),
+        tool_tip: Joi.string().optional(),
+        short_description: Joi.string().optional(),
+        category: Joi.string().optional(),
         is_active: Joi.boolean().optional(),
         user_id: Joi.number().integer().optional(),
       });

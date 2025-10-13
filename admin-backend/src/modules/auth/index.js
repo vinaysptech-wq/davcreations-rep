@@ -1,6 +1,7 @@
 module.exports = (config, logger, db) => {
   logger.debug('Loading auth feature dependencies');
-  const userModel = require('./models/user');
+  const userModelFactory = require('./models/user');
+  const userModel = userModelFactory(db);
   logger.debug('userModel loaded successfully');
   let userAccessModel;
   try {
@@ -12,7 +13,13 @@ module.exports = (config, logger, db) => {
   }
   const refreshTokenModel = require('../../models/RefreshToken');
   logger.debug('refreshTokenModel loaded successfully');
-  const service = require('./services/authService')(config, logger, userModel, userAccessModel, refreshTokenModel);
+
+  // Initialize permission resolution service
+  const PermissionResolutionService = require('../../services/permissionResolutionService');
+  const permissionService = new PermissionResolutionService(db);
+  logger.debug('PermissionResolutionService loaded successfully');
+
+  const service = require('./services/authService')(config, logger, userModel, userAccessModel, refreshTokenModel, permissionService);
   const controller = require('./controllers/authController')(service, logger);
   const router = require('./routes/auth')(controller, logger);
   return router;

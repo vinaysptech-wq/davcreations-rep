@@ -10,11 +10,13 @@ describe('Auth Controller', () => {
   beforeEach(() => {
     mockService = {
       login: jest.fn(),
+      logout: jest.fn(),
     };
     mockLogger = {
       warn: jest.fn(),
       error: jest.fn(),
       info: jest.fn(),
+      debug: jest.fn(),
     };
     controller = authController(mockService, mockLogger);
 

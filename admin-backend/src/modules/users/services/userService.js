@@ -5,14 +5,24 @@ module.exports = (config, logger, models) => ({
     try {
       logger.debug(`Creating user with email: ${userData.email}`);
 
+      // Detailed logging for debugging
+      logger.debug(`Received userData fields: first_name=${userData.first_name}, last_name=${userData.last_name}, email=${userData.email}, user_password=${userData.user_password ? '[PRESENT]' : '[MISSING]'}, user_type_id=${userData.user_type_id}, address=${userData.address}, confirm_password=${userData.confirm_password ? '[PRESENT]' : '[MISSING]'}`);
+
       // Basic validation
       if (!userData.first_name || !userData.last_name || !userData.email || !userData.user_password || !userData.user_type_id) {
+        logger.error(`Validation failed: first_name=${!!userData.first_name}, last_name=${!!userData.last_name}, email=${!!userData.email}, user_password=${!!userData.user_password}, user_type_id=${!!userData.user_type_id}`);
         throw new Error('Required fields missing');
+      }
+      // Validate address
+      if (!userData.address || userData.address.trim() === '') {
+        throw new Error('Address is required and cannot be empty');
       }
       // Check password confirmation
       if (userData.user_password !== userData.confirm_password) {
         throw new Error('Passwords do not match');
       }
+
+      logger.debug(`Validation passed, proceeding to create user with data: ${JSON.stringify({ ...userData, user_password: '[REDACTED]', confirm_password: '[REDACTED]' })}`);
 
       // Model handles hashing
       const user = await models.user.createUser(userData);
@@ -174,6 +184,7 @@ module.exports = (config, logger, models) => ({
         throw new Error('User not found');
       }
       const profile = {
+        user_id: user.user_id,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
@@ -181,6 +192,7 @@ module.exports = (config, logger, models) => ({
         address: user.address,
         city: user.city,
         state: user.state,
+        image: user.image,
       };
       logger.info('getProfile completed successfully');
       return profile;
@@ -321,6 +333,66 @@ module.exports = (config, logger, models) => ({
         userId,
         action,
         details
+      });
+      throw error;
+    }
+  },
+
+  bulkAssignPermissions: async (user_id, moduleIds, created_by) => {
+    try {
+      logger.debug(`bulkAssignPermissions called with user_id: ${user_id}, moduleIds: ${JSON.stringify(moduleIds)}, created_by: ${created_by}`);
+
+      // Get current modules for the user
+      const currentModules = await models.userAccess.getModulesByUserId(user_id);
+      const currentModuleIds = currentModules.map(m => m.admin_module_id);
+
+      // Add new modules that aren't already assigned
+      const newModuleIds = moduleIds.filter(id => !currentModuleIds.includes(id));
+
+      if (newModuleIds.length === 0) {
+        logger.info('No new modules to assign');
+        return { message: 'All modules already assigned' };
+      }
+
+      const allModuleIds = [...currentModuleIds, ...newModuleIds];
+      const result = await models.userAccess.updateUserModules(user_id, allModuleIds, created_by);
+      logger.info(`AUDIT: Bulk permissions assigned to user ${user_id} by user ${created_by}`);
+      logger.info('bulkAssignPermissions completed successfully');
+      return result;
+    } catch (error) {
+      logger.error('Error in userService.bulkAssignPermissions', {
+        error: error.message,
+        stack: error.stack,
+        user_id,
+        moduleIds,
+        created_by
+      });
+      throw error;
+    }
+  },
+
+  bulkRemovePermissions: async (user_id, moduleIds, created_by) => {
+    try {
+      logger.debug(`bulkRemovePermissions called with user_id: ${user_id}, moduleIds: ${JSON.stringify(moduleIds)}, created_by: ${created_by}`);
+
+      // Get current modules for the user
+      const currentModules = await models.userAccess.getModulesByUserId(user_id);
+      const currentModuleIds = currentModules.map(m => m.admin_module_id);
+
+      // Remove specified modules
+      const remainingModuleIds = currentModuleIds.filter(id => !moduleIds.includes(id));
+
+      const result = await models.userAccess.updateUserModules(user_id, remainingModuleIds, created_by);
+      logger.info(`AUDIT: Bulk permissions removed from user ${user_id} by user ${created_by}`);
+      logger.info('bulkRemovePermissions completed successfully');
+      return result;
+    } catch (error) {
+      logger.error('Error in userService.bulkRemovePermissions', {
+        error: error.message,
+        stack: error.stack,
+        user_id,
+        moduleIds,
+        created_by
       });
       throw error;
     }

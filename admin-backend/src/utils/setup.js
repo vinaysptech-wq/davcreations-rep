@@ -6,6 +6,17 @@ const logger = require('./logger');
 async function setup() {
   try {
     console.log('Setup script is running');
+    logger.info('Starting database setup process...');
+
+    // Test database connection
+    try {
+      await prisma.$connect();
+      logger.info('Database connection successful');
+    } catch (dbError) {
+      logger.error('Database connection failed:', dbError.message);
+      throw new Error(`Database connection failed: ${dbError.message}`);
+    }
+
     // Check if setup already completed
     const existingSuperadmin = await prisma.user.findFirst({ where: { email: process.env.DEFAULT_SUPERADMIN_EMAIL } });
     if (existingSuperadmin) {
@@ -47,9 +58,9 @@ async function setup() {
     });
 
     // Insert admin modules with URL slugs
-    let userModule = await prisma.adminModule.findFirst({ where: { module_name: 'Users' } });
+    let userModule = await prisma.adminModules.findFirst({ where: { module_name: 'Users' } });
     if (!userModule) {
-      userModule = await prisma.adminModule.create({
+      userModule = await prisma.adminModules.create({
         data: {
           module_name: 'Users',
           url_slug: 'users',
@@ -60,15 +71,15 @@ async function setup() {
       });
     } else if (!userModule.url_slug) {
       // Update existing module if url_slug is missing
-      userModule = await prisma.adminModule.update({
+      userModule = await prisma.adminModules.update({
         where: { admin_module_id: userModule.admin_module_id },
         data: { url_slug: 'users' },
       });
     }
 
-    let adminModulesModule = await prisma.adminModule.findFirst({ where: { module_name: 'Admin Modules' } });
+    let adminModulesModule = await prisma.adminModules.findFirst({ where: { module_name: 'Admin Modules' } });
     if (!adminModulesModule) {
-      adminModulesModule = await prisma.adminModule.create({
+      adminModulesModule = await prisma.adminModules.create({
         data: {
           module_name: 'Admin Modules',
           url_slug: 'modules',
@@ -79,7 +90,7 @@ async function setup() {
       });
     } else if (!adminModulesModule.url_slug) {
       // Update existing module if url_slug is missing
-      adminModulesModule = await prisma.adminModule.update({
+      adminModulesModule = await prisma.adminModules.update({
         where: { admin_module_id: adminModulesModule.admin_module_id },
         data: { url_slug: 'modules' },
       });

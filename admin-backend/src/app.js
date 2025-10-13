@@ -10,9 +10,10 @@ const cookieParser = require('cookie-parser');
 let config, logger, db, setup;
 try {
   config = require('./config');
-  logger = require('./utils/logger');
+  const utils = require('./utils');
+  logger = utils.logger;
   db = require('./lib/prisma');
-  setup = require('./utils/setup');
+  setup = utils.setup;
 } catch (error) {
   console.error('CRITICAL: Failed to load configuration or dependencies:', error.message);
   process.exit(1);
@@ -25,6 +26,8 @@ if (process.env.NODE_ENV !== 'test') {
   logger.info(`Server config loaded - Port: ${config.server.port}, Env: ${config.server.env}`);
   logger.info(`SSL Config - HTTPS Enabled: ${config.server.httpsEnabled}, HTTPS Redirect: ${config.server.httpsRedirect}`);
   logger.info(`CORS Config - Origin: ${config.server.corsOrigin}, Credentials: ${config.server.corsCredentials}`);
+  logger.info(`Database URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
+  logger.info(`JWT Secret: ${process.env.JWT_SECRET ? 'SET' : 'NOT SET'}`);
 }
 
 // Middleware
@@ -66,10 +69,10 @@ app.use(express.static('../frontend'));
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      defaultSrc: ['\'self\''],
+      styleSrc: ['\'self\'', '\'unsafe-inline\''],
+      scriptSrc: ['\'self\''],
+      imgSrc: ['\'self\'', 'data:', 'https:'],
     },
   },
 }));
@@ -139,9 +142,10 @@ app.use('/api/logging', routers.logging);
 app.use('/api/userTypes', routers.userTypes);
 app.use('/api/admin-modules', routers.adminModules);
 app.use('/api/support', routers.support);
+app.use('/api/audit', routers.audit);
 
 // Global error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   // Log the error with details
   logger.error('Unhandled error occurred', {
     error: err.message,

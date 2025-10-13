@@ -1,8 +1,12 @@
 const winston = require('winston');
 
-// Determine log level based on environment or LOG_LEVEL env var
+/**
+ * Determines the appropriate log level based on environment configuration
+ * Priority: LOG_LEVEL env var > NODE_ENV > default 'debug'
+ * @returns {string} Log level ('error', 'warn', 'info', or 'debug')
+ */
 const getLogLevel = () => {
-  // Allow override via environment variable
+  // Allow override via environment variable for maximum flexibility
   if (process.env.LOG_LEVEL) {
     const validLevels = ['error', 'warn', 'info', 'debug'];
     if (validLevels.includes(process.env.LOG_LEVEL.toLowerCase())) {
@@ -10,13 +14,14 @@ const getLogLevel = () => {
     }
   }
 
+  // Environment-based defaults for different deployment stages
   const env = process.env.NODE_ENV;
   if (env === 'production') {
-    return 'warn'; // In production, log warnings and above
+    return 'warn'; // In production, log warnings and above to reduce noise
   } else if (env === 'staging') {
-    return 'info'; // In staging, log info and above
+    return 'info'; // In staging, log info and above for monitoring
   }
-  return 'debug'; // for development, debugging, or other environments
+  return 'debug'; // Default for development, debugging, or other environments
 };
 
 // Create transports
@@ -48,7 +53,11 @@ const logger = winston.createLogger({
   transports
 });
 
-// Function to dynamically change log level
+/**
+ * Dynamically changes the logger's log level at runtime
+ * Useful for debugging or adjusting verbosity without restart
+ * @param {string} level - The new log level ('error', 'warn', 'info', or 'debug')
+ */
 logger.setLogLevel = (level) => {
   const validLevels = ['error', 'warn', 'info', 'debug'];
   if (validLevels.includes(level.toLowerCase())) {

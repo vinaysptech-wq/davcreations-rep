@@ -16,8 +16,15 @@ export const handleApiError = (error: AppError, showToast: boolean = true): void
   if (showToast) {
     let userMessage = 'An unexpected error occurred. Please try again.';
 
+    // Handle structured validation errors
+    if (error.details && typeof error.details === 'object' && 'type' in error.details && error.details.type === 'VALIDATION_ERROR') {
+      userMessage = error.message;
+    }
     // Customize message based on error type
-    if (error.status === 401 || (error.status === 403 && error.message === 'Invalid or expired token')) {
+    else if (error.status === 400 && error.message) {
+      // Use backend validation message
+      userMessage = error.message;
+    } else if (error.status === 401) {
       userMessage = 'Your session has expired. Please log in again.';
     } else if (error.status === 403) {
       userMessage = 'You do not have permission to perform this action.';
@@ -27,8 +34,8 @@ export const handleApiError = (error: AppError, showToast: boolean = true): void
       userMessage = 'Too many requests. Please wait a moment and try again.';
     } else if (error.status === 500) {
       userMessage = 'Server error. Please try again later.';
-    } else if (error.message) {
-      // Use the error message if it's user-friendly
+    } else if (error.message && error.message !== 'HTTP ' + error.status + ': ' + error.status) {
+      // Use the error message if it's user-friendly and not a generic HTTP status
       userMessage = error.message;
     }
 

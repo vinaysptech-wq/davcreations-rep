@@ -65,36 +65,7 @@ export default function UserRoleManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    user_type_id: '',
-    email: '',
-    user_password: '',
-    confirm_password: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    bank_name: '',
-    bank_ifsc_code: '',
-    bank_account_number: '',
-    bank_address: '',
-    is_active: true,
-  });
-  const [formError, setFormError] = useState('');
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
 
   // Roles states
   const [roles, setRoles] = useState<UserType[]>([]);
@@ -217,7 +188,7 @@ export default function UserRoleManagementPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setUserTypes(data);
+        setRoles(data);
       }
     } catch (error) {
       console.error('Error fetching user types:', error);
@@ -245,110 +216,7 @@ export default function UserRoleManagementPage() {
     }
   };
 
-  const openAddModal = () => {
-    setModalMode('add');
-    setSelectedUserId(null);
-    setFormData({
-      first_name: '',
-      last_name: '',
-      user_type_id: '',
-      email: '',
-      user_password: '',
-      confirm_password: '',
-      phone: '',
-      address: '',
-      city: '',
-      state: '',
-      bank_name: '',
-      bank_ifsc_code: '',
-      bank_account_number: '',
-      bank_address: '',
-      is_active: true,
-    });
-    setFormError('');
-    setIsModalOpen(true);
-  };
 
-  const openEditModal = async (user: User) => {
-    setModalMode('edit');
-    setSelectedUserId(user.id);
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/${user.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setFormData({
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          user_type_id: userData.user_typeid.toString(),
-          email: userData.email,
-          user_password: '',
-          confirm_password: '',
-          phone: userData.phone || '',
-          address: userData.address || '',
-          city: userData.city || '',
-          state: userData.state || '',
-          bank_name: userData.bank_name || '',
-          bank_ifsc_code: userData.bank_ifsc_code || '',
-          bank_account_number: userData.bank_account_number || '',
-          bank_address: userData.bank_address || '',
-          is_active: userData.is_active,
-        });
-        setFormError('');
-        setIsModalOpen(true);
-      } else {
-        setErrorUsers('Failed to load user data');
-      }
-    } catch {
-      setErrorUsers('Error loading user data');
-    }
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError('');
-    if (modalMode === 'add' && formData.user_password !== formData.confirm_password) {
-      setFormError('Passwords do not match');
-      return;
-    }
-    if (modalMode === 'edit' && formData.user_password && formData.user_password !== formData.confirm_password) {
-      setFormError('Passwords do not match');
-      return;
-    }
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const submitData = modalMode === 'edit' && !formData.user_password
-      ? (() => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { user_password, confirm_password, ...rest } = formData;
-          return rest;
-        })()
-      : { ...formData };
-    try {
-      const url = modalMode === 'add' ? '${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users' : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/${selectedUserId}`;
-      const method = modalMode === 'add' ? 'POST' : 'PUT';
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(submitData),
-      });
-      if (response.ok) {
-        setIsModalOpen(false);
-        fetchUsersCallback(token);
-      } else {
-        const errorData = await response.json();
-        setFormError(errorData.message || `Failed to ${modalMode} user`);
-      }
-    } catch {
-      setFormError(`Error ${modalMode === 'add' ? 'adding' : 'updating'} user`);
-    }
-  };
 
   const filteredUsers = users.filter(user => {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
@@ -581,7 +449,7 @@ export default function UserRoleManagementPage() {
   };
 
   const handleCancel = () => {
-    setSelectedUserId('');
+    setSelectedModuleUserId('');
     setSelectedModuleIds([]);
   };
 
@@ -784,7 +652,7 @@ export default function UserRoleManagementPage() {
           <>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 md:mb-0">Users</h2>
-              <Button onClick={openAddModal}>Add User</Button>
+              <Button>Add User</Button>
             </div>
             {errorUsers && <div className="mb-4 text-red-600 bg-red-50 p-4 rounded">{errorUsers}</div>}
             <div className="mb-4">
@@ -801,7 +669,7 @@ export default function UserRoleManagementPage() {
                 <Button onClick={() => setAppliedSearchQuery(searchQuery)} className="rounded-l-none">Search</Button>
               </div>
             </div>
-            <UserTable users={filteredUsers} onEdit={openEditModal} onDelete={handleDeleteUser} />
+            <UserTable users={filteredUsers} onDelete={handleDeleteUser} />
 
             {/* Pagination */}
             {totalPages > 1 && (

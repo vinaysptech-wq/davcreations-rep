@@ -15,5 +15,18 @@ module.exports = (controller, logger) => {
   router.put('/level', authenticateToken, controller.setLogLevel);
   router.get('/logs', authenticateToken, controller.getLogs);
 
+  // Settings routes
+  router.get('/settings', authenticateToken, controller.getSettings);
+  router.get('/settings/:key', authenticateToken, controller.getSetting);
+  router.post('/settings', authenticateToken, controller.createSetting);
+  router.put('/settings/:key', authenticateToken, controller.updateSetting);
+  router.delete('/settings/:key', authenticateToken, controller.deleteSetting);
+
+  // Audit routes
+  router.get('/permissions/:rolePermissionsId', authenticateToken, controller.getAuditLogsForPermission);
+  router.get('/users/:userId', authenticateToken, controller.getAuditLogsForUser);
+  router.get('/date-range', authenticateToken, controller.getAuditLogsByDateRange);
+  router.get('/summary', authenticateToken, controller.getAuditSummary);
+
   return router;
 };

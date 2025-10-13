@@ -4,7 +4,7 @@ import Button from '@/components/ui/button/Button';
 
 interface UserTableProps {
   users: User[];
-  onEdit: (user: User) => void;
+  onEdit?: (user: User) => void;
   onDelete: (id: string) => void;
 }
 
@@ -34,7 +34,7 @@ export default function UserTable({ users, onEdit, onDelete }: UserTableProps) {
             <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.userType}</TableCell>
             <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.isActive ? 'Active' : 'Inactive'}</TableCell>
             <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <Button variant="outline" size="sm" onClick={() => onEdit(user)} className="mr-2">View/Edit</Button>
+              {onEdit && <Button variant="outline" size="sm" onClick={() => onEdit(user)} className="mr-2">View/Edit</Button>}
               <Button variant="outline" size="sm" onClick={() => onDelete(user.id)}>Delete</Button>
             </TableCell>
           </TableRow>

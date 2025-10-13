@@ -12,7 +12,7 @@ model User {
   first_name            String
   last_name             String
   user_typeid           Int
-  address               String?
+  address               String
   email                 String      @unique
   phone                 String?
   user_password         String
@@ -38,6 +38,7 @@ model User {
   orders                Order[]
   reviews               Review[]
   refresh_tokens        RefreshToken[]
+  permission_audits     PermissionAudit[]
 
   @@map("users")
 }
@@ -62,7 +63,8 @@ model UserType {
   last_updated_date  DateTime @updatedAt
   is_active          Boolean  @default(true)
 
-  users User[]
+  users              User[]
+  role_permissions   RolePermissions[]
 
   @@map("user_type")
 }
@@ -81,6 +83,7 @@ model AdminModules {
   is_active          Boolean     @default(true)
 
   user_access        UserAccess[]
+  role_permissions   RolePermissions[]
   parent             AdminModules? @relation("ParentChild", fields: [parent_id], references: [admin_module_id])
   children           AdminModules[] @relation("ParentChild")
   user               User?       @relation(fields: [user_id], references: [user_id])
@@ -102,6 +105,45 @@ model UserAccess {
   created_by_user    User        @relation("CreatedBy", fields: [created_by], references: [user_id])
 
   @@map("user_access")
+}
+
+model RolePermissions {
+  role_permissions_id Int      @id @default(autoincrement())
+  user_type_id         Int
+  admin_module_id      Int
+  permissions          Json     // Granular permissions: { view: boolean, create: boolean, edit: boolean, delete: boolean }
+  created_date         DateTime @default(now())
+  last_updated_date    DateTime @updatedAt
+  is_active            Boolean  @default(true)
+
+  user_type            UserType     @relation(fields: [user_type_id], references: [user_type_id])
+  admin_module         AdminModules @relation(fields: [admin_module_id], references: [admin_module_id])
+  audit_logs           PermissionAudit[]
+
+  @@map("role_permissions")
+  @@index([user_type_id, admin_module_id])
+  @@index([is_active])
+}
+
+model PermissionAudit {
+  audit_id             Int      @id @default(autoincrement())
+  role_permissions_id  Int
+  user_id              Int      // User who made the change
+  action               String   // 'create', 'update', 'delete'
+  old_permissions      Json?    // Previous permissions state
+  new_permissions      Json?    // New permissions state
+  change_reason        String?  // Reason for change
+  ip_address           String?
+  user_agent           String?
+  created_date         DateTime @default(now())
+
+  role_permission      RolePermissions @relation(fields: [role_permissions_id], references: [role_permissions_id])
+  user                 User             @relation(fields: [user_id], references: [user_id])
+
+  @@map("permission_audit")
+  @@index([role_permissions_id])
+  @@index([user_id])
+  @@index([created_date])
 }
 
 model Setting {

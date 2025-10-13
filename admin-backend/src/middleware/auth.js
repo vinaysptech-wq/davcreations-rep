@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const logger = require('../utils/logger');
+const { logger } = require('../utils');
 
 const authenticateToken = (req, res, next) => {
   logger.debug(`Auth middleware: checking token for ${req.method} ${req.path}`);

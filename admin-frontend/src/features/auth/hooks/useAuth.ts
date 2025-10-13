@@ -73,6 +73,7 @@ export function useAuth() {
     if (token && refreshToken) {
       startRefreshTimer(token);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user, refreshToken]);
 
   useEffect(() => {

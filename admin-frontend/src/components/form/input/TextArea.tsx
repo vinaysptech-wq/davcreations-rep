@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 interface TextareaProps {
   placeholder?: string; // Placeholder text
@@ -9,18 +9,23 @@ interface TextareaProps {
   disabled?: boolean; // Disabled state
   error?: boolean; // Error state
   hint?: string; // Hint text to display
+  name?: string;
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
 }
 
-const TextArea: React.FC<TextareaProps> = ({
+const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
   placeholder = "Enter your message", // Default placeholder
   rows = 3, // Default number of rows
-  value = "", // Default value
+  value = undefined, // Default value
   onChange, // Callback for changes
   className = "", // Additional custom styles
   disabled = false, // Disabled state
   error = false, // Error state
   hint = "", // Default hint text
-}) => {
+  name,
+  onBlur,
+  ...rest // Capture additional props
+}, ref) => {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (onChange) {
       onChange(e);
@@ -40,12 +45,16 @@ const TextArea: React.FC<TextareaProps> = ({
   return (
     <div className="relative">
       <textarea
+        ref={ref}
         placeholder={placeholder}
         rows={rows}
-        value={value}
+        {...(value !== undefined ? { value } : {})}
         onChange={handleChange}
         disabled={disabled}
         className={textareaClasses}
+        name={name}
+        onBlur={onBlur}
+        {...rest}
       />
       {hint && (
         <p
@@ -58,6 +67,8 @@ const TextArea: React.FC<TextareaProps> = ({
       )}
     </div>
   );
-};
+});
+
+TextArea.displayName = "TextArea";
 
 export default TextArea;

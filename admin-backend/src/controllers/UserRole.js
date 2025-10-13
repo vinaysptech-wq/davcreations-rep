@@ -507,14 +507,14 @@ module.exports = (service, logger, loggingService) => ({
     }
   },
 
-  getUserTypes: async (req, res) => {
-    logger.debug('Starting getUserTypes');
+  getAllUserTypes: async (req, res) => {
+    logger.debug('Starting getAllUserTypes');
     try {
       const userTypes = await service.getAll();
-      logger.info('getUserTypes completed successfully');
+      logger.info('getAllUserTypes completed successfully');
       res.json(userTypes);
     } catch (error) {
-      logger.error('Error in getUserTypes', {
+      logger.error('Error in getAllUserTypes', {
         error: error.message,
         stack: error.stack,
         request: {

@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 
 module.exports = (config, logger, models) => ({
   getLogLevel: async () => {
@@ -142,7 +141,7 @@ module.exports = (config, logger, models) => ({
 
   deleteSetting: async (key) => {
     try {
-      const db = require('../../../lib/prisma');
+      const db = require('../../../../lib/prisma');
       const setting = await db.setting.findUnique({ where: { setting_key: key } });
       if (!setting) return null;
       await db.setting.delete({ where: { setting_key: key } });
@@ -173,6 +172,68 @@ module.exports = (config, logger, models) => ({
         message,
         userAgent,
         url
+      });
+      throw error;
+    }
+  },
+
+  // Audit methods
+  getAuditLogsForPermission: async (rolePermissionsId, limit = 50) => {
+    try {
+      const auditLogs = await models.permissionAudit.getAuditLogsForPermission(rolePermissionsId, limit);
+      return auditLogs;
+    } catch (error) {
+      logger.error('Error in loggingService.getAuditLogsForPermission', {
+        error: error.message,
+        stack: error.stack,
+        rolePermissionsId,
+        limit
+      });
+      throw error;
+    }
+  },
+
+  getAuditLogsForUser: async (userId, limit = 100) => {
+    try {
+      const auditLogs = await models.permissionAudit.getAuditLogsForUser(userId, limit);
+      return auditLogs;
+    } catch (error) {
+      logger.error('Error in loggingService.getAuditLogsForUser', {
+        error: error.message,
+        stack: error.stack,
+        userId,
+        limit
+      });
+      throw error;
+    }
+  },
+
+  getAuditLogsByDateRange: async (startDate, endDate, limit = 500) => {
+    try {
+      const auditLogs = await models.permissionAudit.getAuditLogsByDateRange(startDate, endDate, limit);
+      return auditLogs;
+    } catch (error) {
+      logger.error('Error in loggingService.getAuditLogsByDateRange', {
+        error: error.message,
+        stack: error.stack,
+        startDate,
+        endDate,
+        limit
+      });
+      throw error;
+    }
+  },
+
+  getAuditSummary: async (startDate, endDate) => {
+    try {
+      const summary = await models.permissionAudit.getAuditSummary(startDate, endDate);
+      return summary;
+    } catch (error) {
+      logger.error('Error in loggingService.getAuditSummary', {
+        error: error.message,
+        stack: error.stack,
+        startDate,
+        endDate
       });
       throw error;
     }

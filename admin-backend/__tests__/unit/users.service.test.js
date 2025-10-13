@@ -52,15 +52,14 @@ describe('User Service', () => {
         user_password: 'password',
         confirm_password: 'password',
         user_type_id: 1,
+        address: '123 Main St',
       };
       const createdUser = { user_id: 1 };
-      bcrypt.hash.mockResolvedValue('hashedpassword');
       mockModels.user.createUser.mockResolvedValue(createdUser);
 
       const result = await service.createUser(userData, 1);
 
-      expect(bcrypt.hash).toHaveBeenCalledWith('password', 10);
-      expect(mockModels.user.createUser).toHaveBeenCalledWith({ ...userData, user_password: 'hashedpassword' }, 1);
+      expect(mockModels.user.createUser).toHaveBeenCalledWith(userData);
       expect(result).toEqual(createdUser);
     });
 
@@ -78,9 +77,52 @@ describe('User Service', () => {
         user_password: 'password',
         confirm_password: 'different',
         user_type_id: 1,
+        address: '123 Main St',
       };
 
       await expect(service.createUser(userData, 1)).rejects.toThrow('Passwords do not match');
+    });
+
+    it('should throw error for missing address', async () => {
+      const userData = {
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'john@example.com',
+        user_password: 'password',
+        confirm_password: 'password',
+        user_type_id: 1,
+        // address missing
+      };
+
+      await expect(service.createUser(userData, 1)).rejects.toThrow('Address is required and cannot be empty');
+    });
+
+    it('should throw error for empty address', async () => {
+      const userData = {
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'john@example.com',
+        user_password: 'password',
+        confirm_password: 'password',
+        user_type_id: 1,
+        address: '',
+      };
+
+      await expect(service.createUser(userData, 1)).rejects.toThrow('Address is required and cannot be empty');
+    });
+
+    it('should throw error for whitespace address', async () => {
+      const userData = {
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'john@example.com',
+        user_password: 'password',
+        confirm_password: 'password',
+        user_type_id: 1,
+        address: '   ',
+      };
+
+      await expect(service.createUser(userData, 1)).rejects.toThrow('Address is required and cannot be empty');
     });
   });
 

@@ -2,7 +2,7 @@ const prisma = require('../../../lib/prisma');
 
 const create = async (data) => {
   try {
-    const module = await prisma.adminModule.create({
+    const module = await prisma.adminModules.create({
       data: {
         module_name: data.module_name,
         description: data.description,
@@ -17,7 +17,7 @@ const create = async (data) => {
 
 const getAll = async () => {
   try {
-    const modules = await prisma.adminModule.findMany({
+    const modules = await prisma.adminModules.findMany({
       orderBy: {
         module_name: 'asc',
       },
@@ -30,7 +30,7 @@ const getAll = async () => {
 
 const getById = async (id) => {
   try {
-    const module = await prisma.adminModule.findUnique({
+    const module = await prisma.adminModules.findUnique({
       where: {
         admin_module_id: parseInt(id),
       },
@@ -43,7 +43,7 @@ const getById = async (id) => {
 
 const update = async (id, data) => {
   try {
-    const module = await prisma.adminModule.update({
+    const module = await prisma.adminModules.update({
       where: {
         admin_module_id: parseInt(id),
       },
@@ -62,7 +62,7 @@ const update = async (id, data) => {
 
 const deleteModule = async (id) => {
   try {
-    const module = await prisma.adminModule.update({
+    const module = await prisma.adminModules.update({
       where: {
         admin_module_id: parseInt(id),
       },
@@ -79,7 +79,7 @@ const deleteModule = async (id) => {
 
 const getActiveModules = async () => {
   try {
-    const result = await prisma.adminModule.findMany({
+    const result = await prisma.adminModules.findMany({
       where: { is_active: true },
       orderBy: {
         module_name: 'asc',

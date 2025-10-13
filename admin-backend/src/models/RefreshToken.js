@@ -1,4 +1,4 @@
-const logger = require('../utils/logger');
+const { logger } = require('../utils');
 const bcrypt = require('bcryptjs');
 const db = require('../lib/prisma');
 
@@ -112,6 +112,71 @@ module.exports = {
       logger.error('Error in refreshTokenModel.rotateRefreshToken', {
         error: error.message,
         stack: error.stack,
+      });
+      throw error;
+    }
+  },
+
+  getRefreshToken: async (token) => {
+    try {
+      const tokens = await db.refreshToken.findMany({
+        where: {
+          is_revoked: false,
+          expires_at: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      for (const t of tokens) {
+        const isMatch = await bcrypt.compare(token, t.token);
+        if (isMatch) {
+          return t;
+        }
+      }
+      return null;
+    } catch (error) {
+      logger.error('Error in refreshTokenModel.getRefreshToken', {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  },
+
+  revokeToken: async (token) => {
+    try {
+      const refreshToken = await this.getRefreshToken(token);
+      if (!refreshToken) {
+        return false;
+      }
+
+      await db.refreshToken.update({
+        where: { refresh_token_id: refreshToken.refresh_token_id },
+        data: { is_revoked: true },
+      });
+      return true;
+    } catch (error) {
+      logger.error('Error in refreshTokenModel.revokeToken', {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  },
+
+  revokeUserTokens: async (userId) => {
+    try {
+      await db.refreshToken.updateMany({
+        where: { user_id: parseInt(userId) },
+        data: { is_revoked: true },
+      });
+      return true;
+    } catch (error) {
+      logger.error('Error in refreshTokenModel.revokeUserTokens', {
+        error: error.message,
+        stack: error.stack,
+        userId,
       });
       throw error;
     }

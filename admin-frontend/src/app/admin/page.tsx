@@ -1,9 +1,8 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import PageBreadCrumb from '../../components/common/PageBreadCrumb';
-import ComponentCard from '../../components/common/ComponentCard';
-import { apiClient } from '../../shared/utils/apiClient';
-import { useAuth } from '../../features/auth/hooks/useAuth';
+import { PageBreadCrumb, ComponentCard } from '@/components/common';
+import { apiClient } from '@/shared/utils/apiClient';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 interface AdminStats {
   totalUsers: number;

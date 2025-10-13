@@ -1,6 +1,6 @@
-import { env } from '../../../config/env';
-import logger from '../../../utils/logger';
-import { handleApiError } from '../../../utils/errorHandler';
+import { env } from '@/config/env';
+import logger from '@/utils/logger';
+import { handleApiError } from '@/utils/errorHandler';
 
 const API_BASE_URL = env.API_BASE_URL;
 
@@ -188,7 +188,7 @@ export class ApiClient {
       logger.debug('Token expired, attempting refresh before request');
       try {
         await this.refreshToken();
-      } catch (refreshError) {
+      } catch {
         logger.error('Token refresh failed before request, proceeding with expired token');
       }
     }
@@ -236,7 +236,7 @@ export class ApiClient {
               logger.debug(`API Success after retry for ${endpoint}`);
               return apiResponse;
             }
-          } catch (refreshError) {
+          } catch {
             logger.error('Token refresh failed on 403, proceeding with error');
           }
         }

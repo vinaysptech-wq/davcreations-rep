@@ -3,9 +3,10 @@ module.exports = (config, logger, models) => ({
     try {
       logger.debug(`Creating user type with name: ${userTypeData.user_type_name}`);
       // Basic validation
-      if (!userTypeData.user_type_name) {
+      if (!userTypeData.user_type_name || !userTypeData.user_type_name.trim()) {
         throw new Error('user_type_name is required');
       }
+      userTypeData.user_type_name = userTypeData.user_type_name.trim();
       const result = await models.userType.create(userTypeData);
       logger.info(`User type created successfully with ID: ${result.user_type_id}`);
       return result;
@@ -55,9 +56,10 @@ module.exports = (config, logger, models) => ({
     try {
       logger.debug(`update called with id: ${user_type_id}, data: ${JSON.stringify(userTypeData)}`);
       // Basic validation
-      if (!userTypeData.user_type_name) {
+      if (!userTypeData.user_type_name || !userTypeData.user_type_name.trim()) {
         throw new Error('user_type_name is required');
       }
+      userTypeData.user_type_name = userTypeData.user_type_name.trim();
       const result = await models.userType.update(user_type_id, userTypeData);
       logger.info('update completed successfully');
       return result;

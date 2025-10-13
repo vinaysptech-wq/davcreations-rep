@@ -27,6 +27,15 @@ module.exports = (controller, logger) => {
   router.get('/profile', (req, res, next) => { logger.info('Fetching current user profile'); next(); }, controller.getProfile);
   router.put('/profile', (req, res, next) => { logger.info('Updating current user profile'); next(); }, controller.updateProfile);
   router.put('/profile/password', (req, res, next) => { logger.info('Updating current user password'); next(); }, controller.updatePassword);
+  router.post('/profile/image', (req, res, next) => { logger.info('Uploading profile image'); next(); }, controller.uploadImage);
+
+  // Preferences routes
+  router.get('/preferences', (req, res, next) => { logger.info('Fetching user preferences'); next(); }, controller.getUserPreferences);
+  router.put('/preferences', (req, res, next) => { logger.info('Updating user preferences'); next(); }, controller.updateUserPreferences);
+
+  // Bulk operations routes
+  router.post('/:id/permissions/bulk', (req, res, next) => { logger.info(`Bulk assigning permissions to user ${req.params.id}`); next(); }, controller.bulkAssignPermissions);
+  router.delete('/:id/permissions/bulk', (req, res, next) => { logger.info(`Bulk removing permissions from user ${req.params.id}`); next(); }, controller.bulkRemovePermissions);
 
   return router;
 };

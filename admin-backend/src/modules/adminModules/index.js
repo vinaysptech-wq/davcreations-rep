@@ -1,4 +1,4 @@
-module.exports = (config, logger, db) => {
+module.exports = (config, logger, _db) => {
   const models = {
     adminModule: require('./models/adminModules'),
   };

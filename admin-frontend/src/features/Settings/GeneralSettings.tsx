@@ -26,7 +26,6 @@ const GeneralSettings: React.FC = () => {
     openAddModal,
     closeAddModal,
     isEditModalOpen,
-    openEditModal,
     closeEditModal,
     editingSetting,
     newKey,

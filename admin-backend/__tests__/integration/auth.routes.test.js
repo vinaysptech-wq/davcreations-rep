@@ -17,6 +17,18 @@ jest.mock('../../src/lib/prisma', () => ({
   userAccess: {
     findMany: jest.fn(),
   },
+  refreshToken: {
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    findMany: jest.fn(),
+  },
+  rolePermissions: {
+    findMany: jest.fn(),
+  },
+  admin_module: {
+    findMany: jest.fn(),
+  },
 }));
 
 // Mock config
@@ -33,6 +45,7 @@ jest.mock('../../src/config', () => ({
   auth: {
     jwtSecret: 'test-secret',
     jwtExpiresIn: '1h',
+    refreshTokenExpiresIn: '7d',
   },
   database: {},
 }));
@@ -43,7 +56,24 @@ const app = require('../../src/app');
 describe('Auth Routes Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    db.userAccess.findMany.mockResolvedValue([{ admin_module_id: 1 }]);
+    db.userAccess.findMany.mockResolvedValue([{
+      admin_module_id: 1,
+      admin_module: {
+        admin_module_id: 1,
+        module_name: 'Test Module',
+        parent_id: null,
+        children: [],
+        parent: null
+      },
+      permissions: { view: true, create: true, edit: true, delete: true },
+      is_active: true
+    }]);
+    db.refreshToken.create.mockResolvedValue({});
+    db.refreshToken.update.mockResolvedValue({});
+    db.refreshToken.updateMany.mockResolvedValue({});
+    db.refreshToken.findMany.mockResolvedValue([]);
+    db.rolePermissions.findMany.mockResolvedValue([]);
+    db.admin_module.findMany.mockResolvedValue([]);
   });
 
   describe('POST /api/auth/login', () => {

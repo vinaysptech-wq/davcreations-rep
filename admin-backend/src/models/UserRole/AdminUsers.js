@@ -173,7 +173,7 @@ const getUserTypes = async () => {
 
 const getActiveModules = async () => {
   try {
-    const modules = await prisma.adminModule.findMany({
+    const modules = await prisma.adminModules.findMany({
       where: {
         is_active: true,
       },

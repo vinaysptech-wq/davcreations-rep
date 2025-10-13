@@ -1,4 +1,4 @@
-import { usersApi, adminModulesApi } from '@/features/UserRole/apis';
+import { usersApi, adminModulesApi } from '@/apis';
 
 interface Module {
   id: string;

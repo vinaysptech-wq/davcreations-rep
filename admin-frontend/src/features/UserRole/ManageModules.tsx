@@ -8,19 +8,24 @@ import InputField from '@/components/form/input/InputField';
 import Label from '@/components/form/Label';
 import Select from '@/components/form/Select';
 import Switch from '@/components/form/switch/Switch';
+import TextArea from '@/components/form/input/TextArea';
 import FormWrapper from '@/components/common/FormWrapper';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import Badge from '@/components/ui/badge/Badge';
 import Button from '@/components/ui/button/Button';
+import DataTable, { ColumnDefinition, ActionConfig } from '@/components/common/DataTable';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import RoleBasedGuard from '@/components/auth/RoleBasedGuard';
 import { adminModulesApi } from '@/shared/utils/apiClient';
+import { useToast } from '@/hooks/useToast';
 
 interface AdminModuleFormData {
   module_name: string;
   url_slug: string;
   parent_id?: string | undefined;
   is_active: boolean;
+  tool_tip?: string;
+  short_description?: string;
+  category?: string;
 }
 
 interface AdminModule {
@@ -37,6 +42,9 @@ interface ModuleResponse {
   url_slug: string;
   parent_id?: number;
   is_active: boolean;
+  tool_tip?: string;
+  short_description?: string;
+  category?: string;
 }
 
 interface AdminModuleFormProps {
@@ -46,6 +54,7 @@ interface AdminModuleFormProps {
 
 const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => {
   const router = useRouter();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [modules, setModules] = useState<AdminModule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +72,9 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
       url_slug: '',
       parent_id: undefined,
       is_active: true,
+      tool_tip: '',
+      short_description: '',
+      category: '',
     },
   });
 
@@ -91,6 +103,9 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
           setValue('url_slug', moduleData.url_slug || '');
           setValue('parent_id', moduleData.parent_id ? moduleData.parent_id.toString() : undefined);
           setValue('is_active', moduleData.is_active ?? true);
+          setValue('tool_tip', moduleData.tool_tip || '');
+          setValue('short_description', moduleData.short_description || '');
+          setValue('category', moduleData.category || '');
         } catch (err) {
           console.error('Failed to fetch module:', err);
           setError('Failed to load module data');
@@ -106,28 +121,38 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
     setSuccess(null);
 
     try {
+      // Transform form data to match API expectations
+      // Convert parent_id from string to number or null
       const submitData = {
         module_name: data.module_name,
         url_slug: data.url_slug,
         parent_id: data.parent_id ? parseInt(data.parent_id) : null,
         is_active: data.is_active,
+        tool_tip: data.tool_tip,
+        short_description: data.short_description,
+        category: data.category,
       };
 
+      // Create new module or update existing one based on mode
       if (mode === 'add') {
         await adminModulesApi.createAdminModule(submitData);
+        toastSuccess('Module created successfully');
         setSuccess('Module created successfully');
       } else {
         await adminModulesApi.updateAdminModule(moduleId!, submitData);
+        toastSuccess('Module updated successfully');
         setSuccess('Module updated successfully');
       }
 
-      // Redirect to module list after success
+      // Redirect to module list after successful operation with delay for user feedback
       setTimeout(() => {
-        router.push('/admin/modules');
+        router.push('/admin/UserRole/ManageModules');
       }, 2000);
     } catch (err: unknown) {
       console.error('Form submission error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred while saving the module');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while saving the module';
+      toastError(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -160,7 +185,11 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
         <div>
           <Label htmlFor="module_name">Module Name *</Label>
           <InputField
-            {...register('module_name')}
+            {...register('module_name', {
+              required: 'Module name is required',
+              minLength: { value: 2, message: 'Module name must be at least 2 characters' },
+              maxLength: { value: 100, message: 'Module name must be less than 100 characters' }
+            })}
             type="text"
             placeholder="Enter module name"
             error={!!errors.module_name}
@@ -171,7 +200,14 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
         <div>
           <Label htmlFor="url_slug">Module Slug *</Label>
           <InputField
-            {...register('url_slug')}
+            {...register('url_slug', {
+              required: 'URL slug is required',
+              pattern: {
+                value: /^[a-z0-9-]+$/,
+                message: 'URL slug can only contain lowercase letters, numbers, and hyphens'
+              },
+              minLength: { value: 2, message: 'URL slug must be at least 2 characters' }
+            })}
             type="text"
             placeholder="Enter module slug"
             error={!!errors.url_slug}
@@ -193,6 +229,44 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
         </div>
 
         <div>
+          <Label htmlFor="tool_tip">Tool Tip</Label>
+          <InputField
+            {...register('tool_tip', {
+              maxLength: { value: 255, message: 'Tool tip must be less than 255 characters' }
+            })}
+            type="text"
+            placeholder="Enter tool tip (optional)"
+            error={!!errors.tool_tip}
+            hint={errors.tool_tip?.message}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="short_description">Short Description</Label>
+          <TextArea
+            {...register('short_description', {
+              maxLength: { value: 500, message: 'Short description must be less than 500 characters' }
+            })}
+            placeholder="Enter short description (optional)"
+            error={!!errors.short_description}
+            hint={errors.short_description?.message}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="category">Category</Label>
+          <InputField
+            {...register('category', {
+              maxLength: { value: 255, message: 'Category must be less than 255 characters' }
+            })}
+            type="text"
+            placeholder="Enter category (optional)"
+            error={!!errors.category}
+            hint={errors.category?.message}
+          />
+        </div>
+
+        <div>
           <Label htmlFor="is_active">Is Active *</Label>
           <Switch
             {...register('is_active')}
@@ -211,9 +285,11 @@ const AdminModuleForm: React.FC<AdminModuleFormProps> = ({ mode, moduleId }) => 
 const ManageModulesList: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [modules, setModules] = useState<AdminModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -236,47 +312,87 @@ const ManageModulesList: React.FC = () => {
     }
   };
 
-  const handleDeleteModule = async (moduleId: number) => {
+  const handleRefresh = () => {
+    fetchModules();
+  };
+
+  const handleDeleteModule = async (module: AdminModule) => {
+    // Show confirmation dialog before deletion
     if (confirm('Are you sure you want to delete this module?')) {
+      // Add module to deleting set to show loading state in UI
+      setDeletingIds(prev => new Set(prev).add(module.admin_module_id));
       try {
-        await adminModulesApi.deleteAdminModule(moduleId.toString());
-        setModules(modules.filter(module => module.admin_module_id !== moduleId));
+        // Call API to delete the module
+        await adminModulesApi.deleteAdminModule(module.admin_module_id.toString());
+        // Remove module from local state on successful deletion
+        setModules(modules.filter(m => m.admin_module_id !== module.admin_module_id));
+        toastSuccess('Module deleted successfully');
       } catch (err) {
-        setError('Failed to delete module');
+        toastError('Failed to delete module');
         console.error('Error deleting module:', err);
+      } finally {
+        // Remove module from deleting set regardless of success/failure
+        setDeletingIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(module.admin_module_id);
+          return newSet;
+        });
       }
     }
   };
 
-  if (loading) {
-    return (
-      <RoleBasedGuard allowedRoles={['Superadmin']}>
-        <PageBreadCrumb pageTitle="Manage Modules" />
-        <div className="space-y-6">
-          <ComponentCard title="Module Management">
-            <div className="p-6 text-center">
-              <p>Loading modules...</p>
-            </div>
-          </ComponentCard>
-        </div>
-      </RoleBasedGuard>
-    );
-  }
+  // DataTable configuration
+  const columns: ColumnDefinition<AdminModule>[] = [
+    {
+      key: 'module_name',
+      header: 'Module Name',
+      render: (module) => (
+        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+          {module.module_name}
+        </span>
+      ),
+    },
+    {
+      key: 'created_date',
+      header: 'Created Date',
+      render: (module) => new Date(module.created_date).toLocaleDateString(),
+    },
+    {
+      key: 'last_updated_date',
+      header: 'Last Updated Date',
+      render: (module) => new Date(module.last_updated_date).toLocaleDateString(),
+    },
+    {
+      key: 'is_active',
+      header: 'Is Active',
+      render: (module) => (
+        <Badge size="sm" color={module.is_active ? "success" : "error"}>
+          {module.is_active ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+  ];
 
-  if (error) {
-    return (
-      <RoleBasedGuard allowedRoles={['Superadmin']}>
-        <PageBreadCrumb pageTitle="Manage Modules" />
-        <div className="space-y-6">
-          <ComponentCard title="Module Management">
-            <div className="p-6 text-center text-red-500">
-              <p>{error}</p>
-            </div>
-          </ComponentCard>
-        </div>
-      </RoleBasedGuard>
-    );
-  }
+  const actions: ActionConfig<AdminModule>[] = [
+    {
+      key: 'edit',
+      label: 'Edit',
+      onClick: (module) => {
+        console.log('Navigating to edit module page:', module.admin_module_id);
+        router.push(`/admin/UserRole/ManageModules/edit/${module.admin_module_id}`);
+      },
+      variant: 'outline',
+    },
+    {
+      key: 'delete',
+      label: 'Delete',
+      onClick: handleDeleteModule,
+      variant: 'outline',
+      disabled: (module) => deletingIds.has(module.admin_module_id),
+      loading: (module) => deletingIds.has(module.admin_module_id),
+    },
+  ];
+
 
   return (
     <RoleBasedGuard allowedRoles={['Superadmin']}>
@@ -289,77 +405,20 @@ const ManageModulesList: React.FC = () => {
                 Manage system modules and their configurations. Create, edit, and organize
                 modules that define the structure and functionality of the application.
               </p>
-              <Button onClick={() => router.push('/admin/modules/add')}>Add New Module</Button>
-            </div>
-
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-              <div className="max-w-full overflow-x-auto">
-                <div className="min-w-[800px]">
-                  <Table>
-                    <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                      <TableRow>
-                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                          Module Name
-                        </TableCell>
-                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                          Created Date
-                        </TableCell>
-                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                          Last Updated Date
-                        </TableCell>
-                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                          Is Active
-                        </TableCell>
-                        <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                          Actions
-                        </TableCell>
-                      </TableRow>
-                    </TableHeader>
-
-                    <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                      {modules.map((module) => (
-                        <TableRow key={module.admin_module_id}>
-                          <TableCell className="px-5 py-4 sm:px-6 text-start">
-                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {module.module_name}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            {new Date(module.created_date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            {new Date(module.last_updated_date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            <Badge size="sm" color={module.is_active ? "success" : "error"}>
-                              {module.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => router.push(`/admin/modules/edit/${module.admin_module_id}`)}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteModule(module.admin_module_id)}
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleRefresh}>Refresh</Button>
+                <Button onClick={() => router.push('/admin/UserRole/ManageModules/add')}>Add New Module</Button>
               </div>
             </div>
+
+            <DataTable
+              data={modules}
+              columns={columns}
+              loading={loading}
+              error={error}
+              actions={actions}
+              emptyMessage="No modules found"
+            />
           </div>
         </ComponentCard>
       </div>

@@ -1,4 +1,4 @@
-const logger = require('../utils/logger');
+const { logger } = require('../utils');
 
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {

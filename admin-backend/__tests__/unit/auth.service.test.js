@@ -5,6 +5,11 @@ const authService = require('../../src/modules/auth/services/authService');
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
+// Mock the permission resolution service
+const mockPermissionService = {
+  getEffectivePermissions: jest.fn(),
+};
+
 describe('Auth Service', () => {
   let mockConfig;
   let mockLogger;
@@ -17,6 +22,7 @@ describe('Auth Service', () => {
       auth: {
         jwtSecret: 'test-secret',
         jwtExpiresIn: '1h',
+        refreshTokenExpiresIn: '7d',
       },
     };
     mockLogger = {
@@ -32,7 +38,10 @@ describe('Auth Service', () => {
     mockUserAccessModel = {
       getModulesByUserId: jest.fn(),
     };
-    service = authService(mockConfig, mockLogger, mockModel, mockUserAccessModel);
+    const mockRefreshTokenModel = {
+      createRefreshToken: jest.fn(),
+    };
+    service = authService(mockConfig, mockLogger, mockModel, mockUserAccessModel, mockRefreshTokenModel, mockPermissionService);
   });
 
   afterEach(() => {
@@ -50,11 +59,10 @@ describe('Auth Service', () => {
         user_typeid: 1,
       };
       const userType = { user_type_name: 'Superadmin' };
-      const userAccessData = [{ admin_module_id: 1 }];
-      const modulePermissions = [1];
+      const modulePermissions = [1, 2, 3]; // Effective permissions including inheritance
       mockModel.getByEmail.mockResolvedValue(user);
       mockModel.getUserTypeById.mockResolvedValue(userType);
-      mockUserAccessModel.getModulesByUserId.mockResolvedValue(userAccessData);
+      mockPermissionService.getEffectivePermissions.mockResolvedValue(modulePermissions);
       bcrypt.compare.mockResolvedValue(true);
       jwt.sign.mockReturnValue('token123');
 
@@ -62,7 +70,7 @@ describe('Auth Service', () => {
 
       expect(mockModel.getByEmail).toHaveBeenCalledWith('test@example.com');
       expect(mockModel.getUserTypeById).toHaveBeenCalledWith(1);
-      expect(mockUserAccessModel.getModulesByUserId).toHaveBeenCalledWith(1);
+      expect(mockPermissionService.getEffectivePermissions).toHaveBeenCalledWith(1, 1);
       expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedpassword');
       expect(jwt.sign).toHaveBeenCalledWith(
         { user_id: 1, email: 'test@example.com', user_typeid: 1, user_type_name: 'Superadmin', module_permissions: modulePermissions },
@@ -71,6 +79,7 @@ describe('Auth Service', () => {
       );
       expect(result).toEqual({
         token: 'token123',
+        refreshToken: expect.any(String),
         user: {
           user_id: 1,
           email: 'test@example.com',
@@ -78,6 +87,7 @@ describe('Auth Service', () => {
           last_name: 'Doe',
           user_type_name: 'Superadmin',
         },
+        expiresIn: 3600,
       });
     });
 

@@ -1,4 +1,4 @@
-module.exports = (config, logger, db) => {
+module.exports = (config, logger, _db) => {
   const model = require('./models/support');
   const service = require('./services/supportService')(config, logger, model);
   const controller = require('./controllers/support')(service, logger);
