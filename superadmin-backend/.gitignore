@@ -1,20 +1,10 @@
 node_modules
-# Environment and Configuration
 .env*
 cookies.txt
-
-# Prisma-Specific
-# .env  # Already covered above
 prisma/migrations/*/migration.sql
-
-# Build and Runtime Artifacts
 dist/
 build/
 *.log
-
-# Storage and Uploads
 storage/
-
-# Other
 .DS_Store
 .vscode/
