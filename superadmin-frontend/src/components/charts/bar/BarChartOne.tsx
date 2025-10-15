@@ -10,6 +10,7 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), {
 });
 
 export default function BarChartOne() {
+  console.log('BarChartOne component executed');
   const options: ApexOptions = {
     colors: ["#465fff"],
     chart: {

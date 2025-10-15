@@ -11,6 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default function page() {
+  console.log('BarChartOne type:', typeof BarChartOne);
+  console.log('BarChartOne:', BarChartOne);
   return (
     <div>
       <PageBreadcrumb pageTitle="Bar Chart" />
