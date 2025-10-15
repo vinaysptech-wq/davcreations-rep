@@ -3,6 +3,8 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import BarChartClient from "@/components/charts/bar/BarChartClient";
 import { Metadata } from "next";
 import React from "react";
+export const dynamic = 'force-dynamic';
+
 
 export const metadata: Metadata = {
   title: "Next.js Bar Chart | TailAdmin - Next.js Dashboard Template",
