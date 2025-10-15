@@ -1,23 +1,19 @@
-name: Deploy to VPS
+name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-        - staging
-        - production
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'staging' }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -28,67 +24,67 @@ jobs:
         node-version: '20'
         cache: 'npm'
 
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: customer-frontend-build
-        path: ./customer-frontend-build
+    - name: Install dependencies for admin-frontend
+      run: |
+        cd admin-frontend
+        npm ci
 
-    - name: Download admin frontend build
-      uses: actions/download-artifact@v4
-      with:
-        name: admin-frontend-build
-        path: ./admin-frontend-build
+    - name: Build admin-frontend
+      run: |
+        cd admin-frontend
+        npm run build
 
-    - name: Download superadmin frontend build
-      uses: actions/download-artifact@v4
-      with:
-        name: superadmin-frontend-build
-        path: ./superadmin-frontend-build
+    - name: Install dependencies for customer-frontend
+      run: |
+        cd customer-frontend
+        npm ci
 
-    - name: Deploy to VPS
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "customer-frontend-build/,admin-frontend-build/,superadmin-frontend-build/"
-        target: "/var/www/html/"
-        strip_components: 1
+    - name: Build customer-frontend
+      run: |
+        cd customer-frontend
+        npm run build
 
-    - name: Restart services on VPS
+    - name: Install dependencies for superadmin-frontend
+      run: |
+        cd superadmin-frontend
+        npm ci
+
+    - name: Build superadmin-frontend
+      run: |
+        cd superadmin-frontend
+        npm run build
+
+    - name: Check for build errors
+      run: |
+        if [ $? -ne 0 ]; then
+          echo "Build failed"
+          exit 1
+        fi
+
+    - name: Deploy to server
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SERVER_PORT || 22 }}
         script: |
-          sudo systemctl restart nginx
-          # Add PM2 restart commands if using Node.js backends
-          # pm2 restart customer-backend || true
-          # pm2 restart admin-backend || true
-          # pm2 restart superadmin-backend || true
+          cd /var/www/dev.davcreations.in/davcreations-rep
+          git pull origin main
+          npm install --prefix admin-frontend
+          npm run build --prefix admin-frontend
+          npm install --prefix customer-frontend
+          npm run build --prefix customer-frontend
+          npm install --prefix superadmin-frontend
+          npm run build --prefix superadmin-frontend
+          pm2 restart ecosystem.config.js
 
-    - name: Health check
-      run: |
-        sleep 10
-        curl -f https://your-domain.com/ || exit 1
-        curl -f https://your-domain.com/admin-frontend/ || exit 1
-        curl -f https://your-domain.com/superadmin-frontend/ || exit 1
-
-    - name: Notify success
-      if: success()
-      run: |
-        echo "Deployment successful!"
-        # Add success notification here
-
-    - name: Rollback on failure
+    - name: Notify on failure
       if: failure()
-      uses: appleboy/ssh-action@v1.0.3
+      uses: 8398a7/action-slack@v3
       with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          # Implement rollback logic here
-          echo "Deployment failed, rollback initiated"
+        status: failure
+        text: "Deployment failed for ${{ github.repository }}. Check the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
