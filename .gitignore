@@ -1,0 +1,36 @@
+# OS-Specific Files
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.suo
+
+# Logs and Debug Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment and Secrets (global if any)
+# .env*  # Uncomment if global env files exist
+
+# Build and Cache Artifacts (global)
+.cache/
+dist/
+
+# Package Managers (if root has shared lockfiles)
+# package-lock.json
+# yarn.lock
+
+# Other Development Artifacts
+coverage/
+.nyc_output/
+
+# Database-related (if sensitive)
+# *.sql
+# *.db
+# database/backups/
