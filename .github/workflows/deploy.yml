@@ -1,0 +1,94 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: customer-frontend-build
+        path: ./customer-frontend-build
+
+    - name: Download admin frontend build
+      uses: actions/download-artifact@v4
+      with:
+        name: admin-frontend-build
+        path: ./admin-frontend-build
+
+    - name: Download superadmin frontend build
+      uses: actions/download-artifact@v4
+      with:
+        name: superadmin-frontend-build
+        path: ./superadmin-frontend-build
+
+    - name: Deploy to VPS
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "customer-frontend-build/,admin-frontend-build/,superadmin-frontend-build/"
+        target: "/var/www/html/"
+        strip_components: 1
+
+    - name: Restart services on VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          sudo systemctl restart nginx
+          # Add PM2 restart commands if using Node.js backends
+          # pm2 restart customer-backend || true
+          # pm2 restart admin-backend || true
+          # pm2 restart superadmin-backend || true
+
+    - name: Health check
+      run: |
+        sleep 10
+        curl -f https://your-domain.com/ || exit 1
+        curl -f https://your-domain.com/admin-frontend/ || exit 1
+        curl -f https://your-domain.com/superadmin-frontend/ || exit 1
+
+    - name: Notify success
+      if: success()
+      run: |
+        echo "Deployment successful!"
+        # Add success notification here
+
+    - name: Rollback on failure
+      if: failure()
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          # Implement rollback logic here
+          echo "Deployment failed, rollback initiated"
