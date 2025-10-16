@@ -2,24 +2,48 @@ module.exports = {
   apps: [
     {
       name: 'customer-frontend',
-      cwd: '/var/www/dev.davcreations.in/davcreations-rep/customer-frontend',
       script: 'npm',
       args: 'start',
-      env: { PORT: 3000, NODE_ENV: 'production' }
+      cwd: '/var/www/dev.davcreations.in/davcreations-rep/customer-frontend',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
     },
     {
       name: 'admin-frontend',
-      cwd: '/var/www/dev.davcreations.in/davcreations-rep/admin-frontend',
       script: 'npm',
       args: 'start',
-      env: { PORT: 3001, NODE_ENV: 'production', NEXT_PUBLIC_BASE_PATH: '/admin-frontend' }
+      cwd: '/var/www/dev.davcreations.in/davcreations-rep/admin-frontend',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+      },
     },
     {
       name: 'superadmin-frontend',
-      cwd: '/var/www/dev.davcreations.in/davcreations-rep/superadmin-frontend',
       script: 'npm',
       args: 'start',
-      env: { PORT: 3002, NODE_ENV: 'production', NEXT_PUBLIC_BASE_PATH: '/superadmin-frontend' }
-    }
-  ]
-};
+      cwd: '/var/www/dev.davcreations.in/davcreations-rep/superadmin-frontend',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3002,
+      },
+    },
+  ],
+}
